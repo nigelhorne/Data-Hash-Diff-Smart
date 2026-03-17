@@ -4,41 +4,45 @@ use strict;
 use warnings;
 
 use Exporter 'import';
-use Data::Hash::Diff::Smart::Engine;
-use Data::Hash::Diff::Smart::Renderer::Text;
-use Data::Hash::Diff::Smart::Renderer::JSON;
-use Data::Hash::Diff::Smart::Renderer::YAML;
+use Data::Hash::Diff::Smart::Engine ();
 
 our @EXPORT_OK = qw(
-    diff
-    diff_text
-    diff_json
-    diff_yaml
+	diff
+	diff_text
+	diff_json
+	diff_yaml
 );
 
 our $VERSION = '0.01';
 
+# Core diff
 sub diff {
-    my ($old, $new, %opts) = @_;
-    return Data::Hash::Diff::Smart::Engine::diff($old, $new, %opts);
+	my ($old, $new, %opts) = @_;
+	return Data::Hash::Diff::Smart::Engine::diff($old, $new, %opts);
 }
 
+# Text renderer (lazy-loaded)
 sub diff_text {
-    my ($old, $new, %opts) = @_;
-    my $changes = diff($old, $new, %opts);
-    return Data::Hash::Diff::Smart::Renderer::Text::render($changes);
+	my ($old, $new, %opts) = @_;
+	require Data::Hash::Diff::Smart::Renderer::Text;
+	my $changes = diff($old, $new, %opts);
+	return Data::Hash::Diff::Smart::Renderer::Text::render($changes);
 }
 
+# JSON renderer (lazy-loaded)
 sub diff_json {
-    my ($old, $new, %opts) = @_;
-    my $changes = diff($old, $new, %opts);
-    return Data::Hash::Diff::Smart::Renderer::JSON::render($changes);
+	my ($old, $new, %opts) = @_;
+	require Data::Hash::Diff::Smart::Renderer::JSON;
+	my $changes = diff($old, $new, %opts);
+	return Data::Hash::Diff::Smart::Renderer::JSON::render($changes);
 }
 
+# YAML renderer (lazy-loaded)
 sub diff_yaml {
-    my ($old, $new, %opts) = @_;
-    my $changes = diff($old, $new, %opts);
-    return Data::Hash::Diff::Smart::Renderer::YAML::render($changes);
+	my ($old, $new, %opts) = @_;
+	require Data::Hash::Diff::Smart::Renderer::YAML;
+	my $changes = diff($old, $new, %opts);
+	return Data::Hash::Diff::Smart::Renderer::YAML::render($changes);
 }
 
 1;
