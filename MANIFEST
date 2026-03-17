@@ -1,3 +1,4 @@
+cpanfile
 lib/Data/Hash/Diff/Smart.pm
 lib/Data/Hash/Diff/Smart/Cookbook.pod
 lib/Data/Hash/Diff/Smart/Engine.pm
