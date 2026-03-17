@@ -6,24 +6,39 @@ use warnings;
 sub render {
     my ($changes) = @_;
 
-    return join "\n",
-        map {
-            my $op = $_->{op};
-            my $path = $_->{path};
-            if ($op eq 'change') {
-                "~ $path\n- $_->{from}\n+ $_->{to}\n";
-            }
-            elsif ($op eq 'add') {
-                "+ $path\n+ $_->{value}\n";
-            }
-            elsif ($op eq 'remove') {
-                "- $path\n";
-            }
-            else {
-                "# unknown op: $op";
-            }
-        } @$changes;
+    return '' unless @$changes;
+
+    my @out;
+
+    for my $c (@$changes) {
+        my $op   = $c->{op};
+        my $path = $c->{path};
+
+        if ($op eq 'change') {
+            push @out,
+                "~ $path",
+                "- $c->{from}",
+                "+ $c->{to}",
+                "";
+        }
+        elsif ($op eq 'add') {
+            push @out,
+                "+ $path",
+                "+ $c->{value}",
+                "";
+        }
+        elsif ($op eq 'remove') {
+            push @out,
+                "- $path",
+                "- $c->{from}",
+                "";
+        }
+        else {
+            push @out, "# unknown op: $op";
+        }
+    }
+
+    return join("\n", @out) . "\n";
 }
 
 1;
-
