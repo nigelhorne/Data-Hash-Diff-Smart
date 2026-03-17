@@ -26,27 +26,6 @@ multiple array diffing strategies.
 The diff engine produces a stable, structured list of change operations,
 which can be rendered as text, JSON, YAML, or Test2 diagnostics.
 
-# BENCHMARKS
-
-To run all benchmarks:
-
-    perl benchmarks/bench.pl
-
-This will run diff operations on:
-
-\- small structures
-\- medium nested structures
-\- large 5000-element arrays
-\- cyclic structures (cycle detection)
-\- unordered array mode
-\- LCS array mode
-
-Example output:
-
-    === Benchmark: medium ===
-                 Rate
-    diff     12000/s
-
 # FUNCTIONS
 
 ## diff($old, $new, %opts)
@@ -100,9 +79,34 @@ Render the diff as Test2 diagnostics suitable for `diag`.
 
 The diff engine lives in [Data::Hash::Diff::Smart::Engine](https://metacpan.org/pod/Data%3A%3AHash%3A%3ADiff%3A%3ASmart%3A%3AEngine).
 
+# BENCHMARKS
+
+To run all benchmarks:
+
+    perl benchmarks/bench.pl
+
+This will run diff operations on:
+
+\- small structures
+\- medium nested structures
+\- large 5000-element arrays
+\- cyclic structures (cycle detection)
+\- unordered array mode
+\- LCS array mode
+
+Example output:
+
+    === Benchmark: medium ===
+                 Rate
+    diff     12000/s
+
 # AUTHOR
 
 Nigel Horne, `<njh at nigelhorne.com>`
+
+# SEE ALSO
+
+[Data::Hash::Diff::Patch](https://metacpan.org/pod/Data%3A%3AHash%3A%3ADiff%3A%3APatch)
 
 # REPOSITORY
 
