@@ -1,3 +1,10 @@
+benchmarks/bench.pl
+benchmarks/cycles.pl
+benchmarks/large.pl
+benchmarks/lcs.pl
+benchmarks/medium.pl
+benchmarks/small.pl
+benchmarks/unordered.pl
 Changes
 cpanfile
 lib/Data/Hash/Diff/Smart.pm
