@@ -3,7 +3,7 @@ package Data::Hash::Diff::Smart::Engine;
 use strict;
 use warnings;
 
-use Scalar::Util qw(reftype blessed);
+use Scalar::Util qw(reftype blessed refaddr);
 use Data::Hash::Diff::Smart::Path ();
 
 # -------------------------------------------------------------------------
@@ -36,15 +36,32 @@ sub _diff {
     # Ignore rules
     return if _is_ignored($path, $ctx->{ignore});
 
+    # ------------------------------------------------------------------
+    # Cycle detection
+    # ------------------------------------------------------------------
+    if (ref($old) && ref($new)) {
+        my $ro = refaddr($old);
+        my $rn = refaddr($new);
+
+        # If we've seen this pair before, stop recursion
+        if ($ctx->{seen}{$ro}{$rn}++) {
+            return;
+        }
+    }
+
     my $rt_old = _reftype($old);
     my $rt_new = _reftype($new);
 
+    # ------------------------------------------------------------------
     # Both scalars
+    # ------------------------------------------------------------------
     if (!$rt_old && !$rt_new) {
         return _diff_scalar($old, $new, $path, $changes, $ctx);
     }
 
+    # ------------------------------------------------------------------
     # Type mismatch
+    # ------------------------------------------------------------------
     if ($rt_old && $rt_new && $rt_old ne $rt_new) {
         push @$changes, {
             op   => 'change',
@@ -55,7 +72,9 @@ sub _diff {
         return;
     }
 
-    # One ref, one not
+    # ------------------------------------------------------------------
+    # One ref, one scalar
+    # ------------------------------------------------------------------
     if ($rt_old && !$rt_new) {
         push @$changes, {
             op   => 'change',
@@ -76,7 +95,9 @@ sub _diff {
         return;
     }
 
+    # ------------------------------------------------------------------
     # Both refs, same type
+    # ------------------------------------------------------------------
     if ($rt_old eq 'HASH') {
         return _diff_hash($old, $new, $path, $changes, $ctx);
     }
@@ -85,7 +106,9 @@ sub _diff {
         return _diff_array($old, $new, $path, $changes, $ctx);
     }
 
+    # ------------------------------------------------------------------
     # Fallback: stringify
+    # ------------------------------------------------------------------
     return _diff_scalar("$old", "$new", $path, $changes, $ctx);
 }
 
