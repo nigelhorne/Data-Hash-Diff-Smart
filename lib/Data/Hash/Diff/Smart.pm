@@ -46,6 +46,27 @@ multiple array diffing strategies.
 The diff engine produces a stable, structured list of change operations,
 which can be rendered as text, JSON, YAML, or Test2 diagnostics.
 
+=head1 BENCHMARKS
+
+To run all benchmarks:
+
+    perl benchmarks/bench.pl
+
+This will run diff operations on:
+
+- small structures
+- medium nested structures
+- large 5000-element arrays
+- cyclic structures (cycle detection)
+- unordered array mode
+- LCS array mode
+
+Example output:
+
+    === Benchmark: medium ===
+                 Rate
+    diff     12000/s
+
 =head1 FUNCTIONS
 
 =head2 diff($old, $new, %opts)
