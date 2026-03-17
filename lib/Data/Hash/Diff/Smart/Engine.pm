@@ -370,24 +370,61 @@ sub _normalize_ignore {
     my ($ignore) = @_;
     return [] unless $ignore;
 
-    return [
-        map {
-            ref($_) eq 'Regexp' ? $_ : "$_"
-        } @$ignore
-    ];
+    my @rules;
+
+    for my $r (@$ignore) {
+
+        # Regex rule
+        if (ref($r) eq 'Regexp') {
+            push @rules, { type => 'regex', re => $r };
+            next;
+        }
+
+        # String rule: check for wildcard
+        if ($r =~ /\*/) {
+            my @parts = grep { length $_ } split m{/}, $r;
+            push @rules, { type => 'wildcard', parts => \@parts };
+        }
+        else {
+            push @rules, { type => 'exact', path => $r };
+        }
+    }
+
+    return \@rules;
 }
 
 sub _is_ignored {
     my ($path, $rules) = @_;
     return 0 unless $rules && @$rules;
 
-    for my $r (@$rules) {
-        if (ref($r) eq 'Regexp') {
-            return 1 if $path =~ $r;
-        } else {
-            return 1 if $path eq $r;
+    # Split current path into parts
+    my @path_parts = grep { length $_ } split m{/}, $path;
+
+    RULE:
+    for my $rule (@$rules) {
+
+        if ($rule->{type} eq 'exact') {
+            return 1 if $path eq $rule->{path};
+        }
+
+        elsif ($rule->{type} eq 'regex') {
+            return 1 if $path =~ $rule->{re};
+        }
+
+        elsif ($rule->{type} eq 'wildcard') {
+            my @r = @{ $rule->{parts} };
+
+            next RULE unless @r == @path_parts;
+
+            for my $i (0 .. $#r) {
+                next if $r[$i] eq '*';
+                next RULE if $r[$i] ne $path_parts[$i];
+            }
+
+            return 1;
         }
     }
+
     return 0;
 }
 

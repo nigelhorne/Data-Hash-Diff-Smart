@@ -10,7 +10,10 @@ Makefile.PL
 MANIFEST			This list of files
 README.md
 t/00-load.t
+t/array-lcs.t
+t/array-unordered.t
 t/basic.t
+t/ignore-wildcards.t
 t/json-renderer.t
 t/test2-renderer.t
 t/text-renderer.t
