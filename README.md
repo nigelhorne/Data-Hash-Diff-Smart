@@ -81,9 +81,53 @@ The diff engine lives in [Data::Hash::Diff::Smart::Engine](https://metacpan.org/
 
 # AUTHOR
 
-Nigel Horne
+Nigel Horne, `<njh at nigelhorne.com>`
 
-# LICENSE
+# REPOSITORY
 
-This library is free software; you may redistribute it under the same
-terms as Perl itself.
+[https://github.com/nigelhorne/Data-Hash-Diff-Smart](https://github.com/nigelhorne/Data-Hash-Diff-Smart)
+
+# SUPPORT
+
+This module is provided as-is without any warranty.
+
+Please report any bugs or feature requests to `bug-data-hash-diff-smart at rt.cpan.org`,
+or through the web interface at
+[http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Data-Hash-Diff-Smart](http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Data-Hash-Diff-Smart).
+I will be notified, and then you'll
+automatically be notified of progress on your bug as I make changes.
+
+You can find documentation for this module with the perldoc command.
+
+    perldoc Data::Hash::Diff::Smart
+
+You can also look for information at:
+
+- MetaCPAN
+
+    [https://metacpan.org/dist/Data-Hash-Diff-Smart](https://metacpan.org/dist/Data-Hash-Diff-Smart)
+
+- RT: CPAN's request tracker
+
+    [https://rt.cpan.org/NoAuth/Bugs.html?Dist=Data-Hash-Diff-Smart](https://rt.cpan.org/NoAuth/Bugs.html?Dist=Data-Hash-Diff-Smart)
+
+- CPAN Testers' Matrix
+
+    [http://matrix.cpantesters.org/?dist=Data-Hash-Diff-Smart](http://matrix.cpantesters.org/?dist=Data-Hash-Diff-Smart)
+
+- CPAN Testers Dependencies
+
+    [http://deps.cpantesters.org/?module=Data::Hash::Diff::Smart](http://deps.cpantesters.org/?module=Data::Hash::Diff::Smart)
+
+# LICENCE AND COPYRIGHT
+
+Copyright 2026 Nigel Horne.
+
+Usage is subject to licence terms.
+
+The licence terms of this software are as follows:
+
+- Personal single user, single computer use: GPL2
+- All other users (including Commercial, Charity, Educational, Government)
+  must apply in writing for a licence for use from Nigel Horne at the
+  above e-mail.
