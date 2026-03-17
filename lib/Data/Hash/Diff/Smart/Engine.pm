@@ -6,15 +6,19 @@ use warnings;
 use Scalar::Util qw(reftype blessed);
 use Data::Hash::Diff::Smart::Path ();
 
+# -------------------------------------------------------------------------
+# Public entry point
+# -------------------------------------------------------------------------
+
 sub diff {
     my ($old, $new, %opts) = @_;
 
     my $changes = [];
 
     my $ctx = {
-        ignore   => _normalize_ignore($opts{ignore}),
-        compare  => $opts{compare} || {},
-        array_mode => $opts{array_mode} || 'index',
+        ignore      => _normalize_ignore($opts{ignore}),
+        compare     => $opts{compare} || {},
+        array_mode  => $opts{array_mode} || 'index',
     };
 
     _diff($old, $new, '', $changes, $ctx);
@@ -23,7 +27,7 @@ sub diff {
 }
 
 # -------------------------------------------------------------------------
-# Internal: recursive diff
+# Core recursive diff
 # -------------------------------------------------------------------------
 
 sub _diff {
@@ -35,7 +39,7 @@ sub _diff {
     my $rt_old = _reftype($old);
     my $rt_new = _reftype($new);
 
-    # Both non-refs (scalars)
+    # Both scalars
     if (!$rt_old && !$rt_new) {
         return _diff_scalar($old, $new, $path, $changes, $ctx);
     }
@@ -51,7 +55,7 @@ sub _diff {
         return;
     }
 
-    # One is ref, other is not
+    # One ref, one not
     if ($rt_old && !$rt_new) {
         push @$changes, {
             op   => 'change',
@@ -81,34 +85,33 @@ sub _diff {
         return _diff_array($old, $new, $path, $changes, $ctx);
     }
 
-    # Fallback: compare stringified
+    # Fallback: stringify
     return _diff_scalar("$old", "$new", $path, $changes, $ctx);
 }
 
 # -------------------------------------------------------------------------
-# Scalar comparison (with optional custom comparator)
+# Scalar comparison
 # -------------------------------------------------------------------------
 
 sub _diff_scalar {
     my ($old, $new, $path, $changes, $ctx) = @_;
 
-    # Custom comparator for this path?
+    # Custom comparator?
     if (my $cmp = $ctx->{compare}{$path}) {
         my $same = eval { $cmp->($old, $new) };
         if ($@) {
-            # If comparator dies, treat as change
             push @$changes, {
-                op   => 'change',
-                path => $path,
-                from => $old,
-                to   => $new,
+                op    => 'change',
+                path  => $path,
+                from  => $old,
+                to    => $new,
                 error => "$@",
             };
             return;
         }
         return if $same;
-    } else {
-        # Default comparison
+    }
+    else {
         return if _eq($old, $new);
     }
 
@@ -155,7 +158,7 @@ sub _diff_hash {
 }
 
 # -------------------------------------------------------------------------
-# Array comparison (index mode)
+# Array comparison dispatcher
 # -------------------------------------------------------------------------
 
 sub _diff_array {
@@ -164,34 +167,186 @@ sub _diff_array {
     my $mode = $ctx->{array_mode} || 'index';
 
     if ($mode eq 'index') {
-        my $max = @$old > @$new ? @$old : @$new;
+        return _diff_array_index($old, $new, $path, $changes, $ctx);
+    }
+    elsif ($mode eq 'lcs') {
+        return _diff_array_lcs($old, $new, $path, $changes, $ctx);
+    }
+    elsif ($mode eq 'unordered') {
+        return _diff_array_unordered($old, $new, $path, $changes, $ctx);
+    }
 
-        for my $i (0 .. $max - 1) {
-            my $subpath = Data::Hash::Diff::Smart::Path::join($path, $i);
+    die "Unsupported array_mode: $mode";
+}
 
-            if ($i <= $#$old && $i <= $#$new) {
-                _diff($old->[$i], $new->[$i], $subpath, $changes, $ctx);
+# -------------------------------------------------------------------------
+# Array mode: index
+# -------------------------------------------------------------------------
+
+sub _diff_array_index {
+    my ($old, $new, $path, $changes, $ctx) = @_;
+
+    my $max = @$old > @$new ? @$old : @$new;
+
+    for my $i (0 .. $max - 1) {
+        my $subpath = Data::Hash::Diff::Smart::Path::join($path, $i);
+
+        if ($i <= $#$old && $i <= $#$new) {
+            _diff($old->[$i], $new->[$i], $subpath, $changes, $ctx);
+        }
+        elsif ($i <= $#$old) {
+            push @$changes, {
+                op   => 'remove',
+                path => $subpath,
+                from => $old->[$i],
+            };
+        }
+        else {
+            push @$changes, {
+                op    => 'add',
+                path  => $subpath,
+                value => $new->[$i],
+            };
+        }
+    }
+}
+
+# -------------------------------------------------------------------------
+# Array mode: LCS (Longest Common Subsequence)
+# -------------------------------------------------------------------------
+
+sub _diff_array_lcs {
+    my ($old, $new, $path, $changes, $ctx) = @_;
+
+    my @a = @$old;
+    my @b = @$new;
+
+    my $m = @a;
+    my $n = @b;
+
+    # DP table
+    my @dp;
+    for my $i (0 .. $m) {
+        for my $j (0 .. $n) {
+            $dp[$i][$j] = 0;
+        }
+    }
+
+    for my $i (1 .. $m) {
+        for my $j (1 .. $n) {
+            if (_eq($a[$i-1], $b[$j-1])) {
+                $dp[$i][$j] = $dp[$i-1][$j-1] + 1;
+            } else {
+                $dp[$i][$j] = $dp[$i-1][$j] > $dp[$i][$j-1]
+                    ? $dp[$i-1][$j]
+                    : $dp[$i][$j-1];
             }
-            elsif ($i <= $#$old) {
-                push @$changes, {
-                    op   => 'remove',
-                    path => $subpath,
-                    from => $old->[$i],
-                };
-            }
-            else {
+        }
+    }
+
+    # Extract LCS
+    my @lcs;
+    my ($i, $j) = ($m, $n);
+
+    while ($i > 0 && $j > 0) {
+        if (_eq($a[$i-1], $b[$j-1])) {
+            unshift @lcs, $a[$i-1];
+            $i--; $j--;
+        }
+        elsif ($dp[$i-1][$j] >= $dp[$i][$j-1]) {
+            $i--;
+        }
+        else {
+            $j--;
+        }
+    }
+
+    # Walk arrays and LCS
+    my ($ai, $bi, $li) = (0, 0, 0);
+
+    while ($ai < @a || $bi < @b) {
+        my $l = $li < @lcs ? $lcs[$li] : undef;
+
+        if ($ai < @a && $bi < @b && _eq($a[$ai], $b[$bi])) {
+            my $subpath = Data::Hash::Diff::Smart::Path::join($path, $bi);
+            _diff($a[$ai], $b[$bi], $subpath, $changes, $ctx);
+            $ai++; $bi++;
+        }
+        elsif ($ai < @a && defined $l && _eq($a[$ai], $l)) {
+            my $subpath = Data::Hash::Diff::Smart::Path::join($path, $bi);
+            push @$changes, {
+                op    => 'add',
+                path  => $subpath,
+                value => $b[$bi],
+            };
+            $bi++;
+        }
+        elsif ($bi < @b && defined $l && _eq($b[$bi], $l)) {
+            my $subpath = Data::Hash::Diff::Smart::Path::join($path, $ai);
+            push @$changes, {
+                op   => 'remove',
+                path => $subpath,
+                from => $a[$ai],
+            };
+            $ai++;
+        }
+        else {
+            my $subpath = Data::Hash::Diff::Smart::Path::join($path, $bi);
+            _diff($a[$ai], $b[$bi], $subpath, $changes, $ctx);
+            $ai++; $bi++;
+        }
+
+        if ($li < @lcs && $ai > 0 && $bi > 0 && _eq($a[$ai-1], $lcs[$li])) {
+            $li++;
+        }
+    }
+}
+
+# -------------------------------------------------------------------------
+# Array mode: unordered (multiset)
+# -------------------------------------------------------------------------
+
+sub _diff_array_unordered {
+    my ($old, $new, $path, $changes, $ctx) = @_;
+
+    my %count_old;
+    my %count_new;
+
+    $count_old{_key($_)}++ for @$old;
+    $count_new{_key($_)}++ for @$new;
+
+    my %keys;
+    $keys{$_}++ for keys %count_old;
+    $keys{$_}++ for keys %count_new;
+
+    for my $k (sort keys %keys) {
+        my $o = $count_old{$k} || 0;
+        my $n = $count_new{$k} || 0;
+
+        if ($n > $o) {
+            for (1 .. $n - $o) {
                 push @$changes, {
                     op    => 'add',
-                    path  => $subpath,
-                    value => $new->[$i],
+                    path  => "$path/*",
+                    value => $k,
                 };
             }
         }
-        return;
+        elsif ($o > $n) {
+            for (1 .. $o - $n) {
+                push @$changes, {
+                    op   => 'remove',
+                    path => "$path/*",
+                    from => $k,
+                };
+            }
+        }
     }
+}
 
-    # Future modes (lcs, unordered) can go here
-    die "Unsupported array_mode: $mode";
+sub _key {
+    my ($v) = @_;
+    return ref($v) ? "$v" : $v;
 }
 
 # -------------------------------------------------------------------------
@@ -211,7 +366,6 @@ sub _eq {
     return $a eq $b;
 }
 
-# ignore => [ '/foo/bar', qr{^/debug}, ... ]
 sub _normalize_ignore {
     my ($ignore) = @_;
     return [] unless $ignore;
