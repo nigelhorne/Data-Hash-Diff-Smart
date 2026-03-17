@@ -2,6 +2,10 @@
 
 Data::Hash::Diff::Smart - Smart structural diff for Perl data structures
 
+# VERSION
+
+Version 0.01
+
 # SYNOPSIS
 
     use Data::Hash::Diff::Smart qw(diff diff_text diff_json diff_yaml diff_test2);

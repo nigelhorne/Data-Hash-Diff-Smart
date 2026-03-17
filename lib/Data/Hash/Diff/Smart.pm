@@ -14,13 +14,17 @@ our @EXPORT_OK = qw(
 	diff_test2
 );
 
-our $VERSION = '0.01';
-
-=pod
-
 =head1 NAME
 
 Data::Hash::Diff::Smart - Smart structural diff for Perl data structures
+
+=head1 VERSION
+
+Version 0.01
+
+=cut
+
+our $VERSION = '0.01';
 
 =head1 SYNOPSIS
 
