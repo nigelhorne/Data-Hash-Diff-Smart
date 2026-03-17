@@ -6,6 +6,61 @@ use warnings;
 use Scalar::Util qw(reftype blessed refaddr);
 use Data::Hash::Diff::Smart::Path ();
 
+=pod
+
+=head1 NAME
+
+Data::Hash::Diff::Smart::Engine - Internal diff engine for Data::Hash::Diff::Smart
+
+=head1 DESCRIPTION
+
+This module implements the recursive diff algorithm used by
+L<Data::Hash::Diff::Smart>. It is not intended to be used directly.
+
+Features include:
+
+=over 4
+
+=item * recursive comparison of scalars, hashes, arrays, and objects
+
+=item * cycle detection to avoid infinite recursion
+
+=item * ignore rules (exact, regex, wildcard)
+
+=item * custom comparators per path
+
+=item * array diff modes: index, LCS, unordered
+
+=back
+
+=head1 INTERNAL METHODS
+
+=head2 diff($old, $new, %opts)
+
+Entry point for computing a diff.
+
+=head2 _diff($old, $new, $path, $changes, $ctx)
+
+Recursive comparison routine.
+
+=head2 _diff_scalar, _diff_hash, _diff_array
+
+Type-specific comparison helpers.
+
+=head2 _diff_array_index, _diff_array_lcs, _diff_array_unordered
+
+Array diffing strategies.
+
+=head2 _normalize_ignore, _is_ignored
+
+Ignore rule processing.
+
+=head2 _reftype, _eq
+
+Utility helpers.
+
+=cut
+
 # -------------------------------------------------------------------------
 # Public entry point
 # -------------------------------------------------------------------------
@@ -452,3 +507,9 @@ sub _is_ignored {
 }
 
 1;
+
+=head1 AUTHOR
+
+Nigel Horne
+
+=cut

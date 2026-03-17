@@ -1,4 +1,5 @@
 lib/Data/Hash/Diff/Smart.pm
+lib/Data/Hash/Diff/Smart/Cookbook.pod
 lib/Data/Hash/Diff/Smart/Engine.pm
 lib/Data/Hash/Diff/Smart/Path.pm
 lib/Data/Hash/Diff/Smart/Renderer/JSON.pm
