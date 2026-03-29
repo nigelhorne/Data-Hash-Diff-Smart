@@ -110,7 +110,7 @@ Nigel Horne, `<njh at nigelhorne.com>`
 
 # SEE ALSO
 
-[Data::Hash::Diff::Patch](https://metacpan.org/pod/Data%3A%3AHash%3A%3ADiff%3A%3APatch)
+[Data::Hash::Diff::Smart](https://metacpan.org/pod/Data%3A%3AHash%3A%3ADiff%3A%3ASmart)
 
 # REPOSITORY
 

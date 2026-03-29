@@ -28,6 +28,7 @@ t/eof.t
 t/eol.t
 t/ignore-wildcards.t
 t/json-renderer.t
+t/kwalitee.t
 t/test2-renderer.t
 t/text-renderer.t
 t/yaml-renderer.t
