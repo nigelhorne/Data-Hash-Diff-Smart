@@ -417,17 +417,17 @@ sub _diff_array_unordered {
 
 	my $key_field = $ctx->{array_key};
 
-    if ($key_field) {
-        # Key-based matching: pair elements by a nominated field value
-        my %old_by_key = map { $_->{$key_field} => $_ } @$old;
-        my %new_by_key = map { $_->{$key_field} => $_ } @$new;
+	if ($key_field) {
+		# Key-based matching: pair elements by a nominated field value
+		my %old_by_key = map { $_->{$key_field} => $_ } @$old;
+		my %new_by_key = map { $_->{$key_field} => $_ } @$new;
 
-        my %all_keys;
-        $all_keys{$_}++ for keys %old_by_key;
-        $all_keys{$_}++ for keys %new_by_key;
+		my %all_keys;
+		$all_keys{$_}++ for keys %old_by_key;
+		$all_keys{$_}++ for keys %new_by_key;
 
-        for my $k (sort keys %all_keys) {
-            my $subpath = Data::Hash::Diff::Smart::Path::join($path, $k);
+		for my $k (sort keys %all_keys) {
+			my $subpath = Data::Hash::Diff::Smart::Path::join($path, $k);
 
             if (exists $old_by_key{$k} && exists $new_by_key{$k}) {
                 # Both sides have this key: recurse and diff structurally
