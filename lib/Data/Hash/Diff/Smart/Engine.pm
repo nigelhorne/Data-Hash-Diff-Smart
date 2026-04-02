@@ -255,11 +255,9 @@ sub _diff_array {
 
 	if ($mode eq 'index') {
 		return _diff_array_index($old, $new, $path, $changes, $ctx);
-	}
-	elsif ($mode eq 'lcs') {
+	} elsif ($mode eq 'lcs') {
 		return _diff_array_lcs($old, $new, $path, $changes, $ctx);
-	}
-	elsif ($mode eq 'unordered') {
+	} elsif ($mode eq 'unordered') {
 		return _diff_array_unordered($old, $new, $path, $changes, $ctx);
 	}
 
@@ -358,26 +356,29 @@ sub _diff_array_lcs {
 			my $subpath = Data::Hash::Diff::Smart::Path::join($path, $bi);
 			_diff($a[$ai], $b[$bi], $subpath, $changes, $ctx);
 			$ai++; $bi++;
-		}
-		elsif ($ai < @a && defined $l && _eq($a[$ai], $l)) {
+		} elsif ($ai < @a && defined $l && _eq($a[$ai], $l)) {
 			my $subpath = Data::Hash::Diff::Smart::Path::join($path, $bi);
 			push @$changes, {
-				op	=> 'add',
-				path  => $subpath,
+				op => 'add',
+				path => $subpath,
 				value => $b[$bi],
 			};
 			$bi++;
-		}
-		elsif ($bi < @b && defined $l && _eq($b[$bi], $l)) {
+		} elsif ($bi < @b && defined $l && _eq($b[$bi], $l)) {
 			my $subpath = Data::Hash::Diff::Smart::Path::join($path, $ai);
 			push @$changes, {
-				op   => 'remove',
+				op => 'remove',
 				path => $subpath,
 				from => $a[$ai],
 			};
 			$ai++;
-		}
-		else {
+		} elsif ($bi >= @b) {
+			# @b exhausted — remaining @a elements are removes
+			last;
+		} elsif ($ai >= @a) {
+			# @a exhausted — remaining @b elements are adds
+			last;
+		} else {
 			my $subpath = Data::Hash::Diff::Smart::Path::join($path, $bi);
 			_diff($a[$ai], $b[$bi], $subpath, $changes, $ctx);
 			$ai++; $bi++;
@@ -387,6 +388,24 @@ sub _diff_array_lcs {
 			$li++;
 		}
 	}
+	while ($ai < @a) {
+		my $subpath = Data::Hash::Diff::Smart::Path::join($path, $ai);
+		push @$changes, {
+			op => 'remove',
+			path => $subpath,
+			from => $a[$ai],
+		};
+		$ai++;
+	}
+	while ($bi < @b) {
+		my $subpath = Data::Hash::Diff::Smart::Path::join($path, $bi);
+		push @$changes, {
+			op => 'add',
+			path => $subpath,
+			value => $b[$bi],
+		};
+		$bi++;
+	}
 }
 
 # -------------------------------------------------------------------------
@@ -394,9 +413,9 @@ sub _diff_array_lcs {
 # -------------------------------------------------------------------------
 
 sub _diff_array_unordered {
-    my ($old, $new, $path, $changes, $ctx) = @_;
+	my ($old, $new, $path, $changes, $ctx) = @_;
 
-    my $key_field = $ctx->{array_key};
+	my $key_field = $ctx->{array_key};
 
     if ($key_field) {
         # Key-based matching: pair elements by a nominated field value
@@ -464,8 +483,15 @@ sub _diff_array_unordered {
 }
 
 sub _key {
-	my ($v) = @_;
-	return ref($v) ? "$v" : $v;
+	my $v = $_[0];
+
+	return $v unless ref($v);
+
+	require Data::Dumper;
+	local $Data::Dumper::Sortkeys = 1;
+	local $Data::Dumper::Indent   = 0;
+	local $Data::Dumper::Terse    = 1;
+	return Data::Dumper::Dumper($v);
 }
 
 # -------------------------------------------------------------------------
