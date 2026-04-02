@@ -454,6 +454,257 @@ subtest 'Renderer::Test2::render()' => sub {
 };
 
 # ===========================================================================
+# SECTION 5c: Renderer::Text - white-box unit tests
+#
+# Unlike Test2, the Text renderer has no "# " prefix, uses sigil-led lines
+# (~, +, -) and a distinct unknown-op format.  Each branch and formatting
+# detail is pinned directly via hand-crafted change lists.
+# ===========================================================================
+
+BEGIN { require Data::Hash::Diff::Smart::Renderer::Text }
+
+my $render_text = \&Data::Hash::Diff::Smart::Renderer::Text::render;
+
+subtest 'Renderer::Text::render()' => sub {
+
+	# ------------------------------------------------------------------
+	# Empty input
+	# ------------------------------------------------------------------
+
+	subtest 'empty changes list: returns empty string' => sub {
+		my $out = $render_text->([]);
+		is($out, '', 'empty arrayref -> empty string');
+	};
+
+	# ------------------------------------------------------------------
+	# Global output invariants
+	# ------------------------------------------------------------------
+
+	subtest 'output ends with a newline' => sub {
+		my $out = $render_text->([
+			{ op => 'add', path => '/x', value => 'v' },
+		]);
+		like($out, qr/\n$/, 'output ends with newline');
+	};
+
+	subtest 'output lines are NOT prefixed with "# "' => sub {
+		# Text renderer must not add the Test2 diagnostic prefix
+		my $out = $render_text->([
+			{ op => 'change', path => '/x', from => 1, to => 2 },
+		]);
+		unlike($out, qr/^# /m, 'no "# " prefix on any line');
+	};
+
+	# ------------------------------------------------------------------
+	# op => 'change'
+	# ------------------------------------------------------------------
+
+	subtest 'change op: header line with "~ " sigil' => sub {
+		my $out = $render_text->([
+			{ op => 'change', path => '/user/name', from => 'Alice', to => 'Bob' },
+		]);
+		like($out, qr/^~ \/user\/name$/m, '"~ <path>" header line present');
+	};
+
+	subtest 'change op: from line with "- " sigil' => sub {
+		my $out = $render_text->([
+			{ op => 'change', path => '/x', from => 'old', to => 'new' },
+		]);
+		like($out, qr/^- old$/m, '"- old" from line present');
+	};
+
+	subtest 'change op: to line with "+ " sigil' => sub {
+		my $out = $render_text->([
+			{ op => 'change', path => '/x', from => 'old', to => 'new' },
+		]);
+		like($out, qr/^\+ new$/m, '"+ new" to line present');
+	};
+
+	subtest 'change op: blank separator line present' => sub {
+		my $out = $render_text->([
+			{ op => 'change', path => '/x', from => 1, to => 2 },
+		]);
+		like($out, qr/\n\n/, 'blank separator line present after change block');
+	};
+
+	subtest 'change op: three content lines before separator' => sub {
+		# "~ path\n- from\n+ to\n\n" => splitting on \n gives exactly
+		# [header, from, to, '', ...], i.e. four tokens before next block
+		my $out = $render_text->([
+			{ op => 'change', path => '/x', from => 'A', to => 'B' },
+		]);
+		my @lines = split /\n/, $out, -1;
+		is($lines[0], '~ /x',  'first line is header');
+		is($lines[1], '- A',   'second line is from');
+		is($lines[2], '+ B',   'third line is to');
+		is($lines[3], '',      'fourth line is blank separator');
+	};
+
+	# ------------------------------------------------------------------
+	# op => 'add'
+	# ------------------------------------------------------------------
+
+	subtest 'add op: header line with "+ " sigil and path' => sub {
+		# Unlike Test2, the Text renderer uses "+ $path" as the header,
+		# not a prose "Added at" string.
+		my $out = $render_text->([
+			{ op => 'add', path => '/tags/2', value => 'admin' },
+		]);
+		like($out, qr/^\+ \/tags\/2$/m, '"+ <path>" header line present');
+	};
+
+	subtest 'add op: value line with "+ " sigil' => sub {
+		my $out = $render_text->([
+			{ op => 'add', path => '/tags/2', value => 'admin' },
+		]);
+		like($out, qr/^\+ admin$/m, '"+ <value>" line present');
+	};
+
+	subtest 'add op: blank separator line present' => sub {
+		my $out = $render_text->([
+			{ op => 'add', path => '/x', value => 'v' },
+		]);
+		like($out, qr/\n\n/, 'blank separator line present after add block');
+	};
+
+	subtest 'add op: two content lines before separator' => sub {
+		my $out = $render_text->([
+			{ op => 'add', path => '/p', value => 'V' },
+		]);
+		my @lines = split /\n/, $out, -1;
+		is($lines[0], '+ /p', 'first line is "+ <path>"');
+		is($lines[1], '+ V',  'second line is "+ <value>"');
+		is($lines[2], '',     'third line is blank separator');
+	};
+
+	# ------------------------------------------------------------------
+	# op => 'remove'
+	# ------------------------------------------------------------------
+
+	subtest 'remove op: header line with "- " sigil and path' => sub {
+		my $out = $render_text->([
+			{ op => 'remove', path => '/debug', from => 1 },
+		]);
+		like($out, qr/^- \/debug$/m, '"- <path>" header line present');
+	};
+
+	subtest 'remove op: from line with "- " sigil' => sub {
+		my $out = $render_text->([
+			{ op => 'remove', path => '/debug', from => 'gone' },
+		]);
+		like($out, qr/^- gone$/m, '"- <from>" line present');
+	};
+
+	subtest 'remove op: blank separator line present' => sub {
+		my $out = $render_text->([
+			{ op => 'remove', path => '/x', from => 'v' },
+		]);
+		like($out, qr/\n\n/, 'blank separator line present after remove block');
+	};
+
+	subtest 'remove op: two content lines before separator' => sub {
+		my $out = $render_text->([
+			{ op => 'remove', path => '/p', from => 'F' },
+		]);
+		my @lines = split /\n/, $out, -1;
+		is($lines[0], '- /p', 'first line is "- <path>"');
+		is($lines[1], '- F',  'second line is "- <from>"');
+		is($lines[2], '',     'third line is blank separator');
+	};
+
+	# ------------------------------------------------------------------
+	# op => unknown
+	# ------------------------------------------------------------------
+
+	subtest 'unknown op: fallback line format is "# unknown op: <op>"' => sub {
+		my $out = $render_text->([
+			{ op => 'frobnicate', path => '/x' },
+		]);
+		like($out, qr/^# unknown op: frobnicate$/m,
+			'"# unknown op: <op>" line emitted');
+	};
+
+	subtest 'unknown op: does not contain path in fallback line' => sub {
+		# The Text renderer's else branch only emits the op name, not the path
+		my $out = $render_text->([
+			{ op => 'bogus', path => '/should/not/appear' },
+		]);
+		unlike($out, qr/should\/not\/appear/,
+			'path does not appear in unknown op fallback line');
+	};
+
+	subtest 'unknown op: no blank separator added' => sub {
+		# The else branch pushes only one line with no trailing ''
+		my $out = $render_text->([
+			{ op => 'bogus', path => '/x' },
+		]);
+		# Only one \n at the end (the final join \n), no \n\n double-blank
+		unlike($out, qr/\n\n/, 'no blank separator after unknown op');
+	};
+
+	# ------------------------------------------------------------------
+	# Contrast with Test2 renderer: sigils not prose labels
+	# ------------------------------------------------------------------
+
+	subtest 'output contains no prose "Difference at" label' => sub {
+		my $out = $render_text->([
+			{ op => 'change', path => '/x', from => 1, to => 2 },
+		]);
+		unlike($out, qr/Difference at/, 'Text renderer uses sigils, not prose labels');
+	};
+
+	subtest 'output contains no prose "Added at" label' => sub {
+		my $out = $render_text->([
+			{ op => 'add', path => '/x', value => 'v' },
+		]);
+		unlike($out, qr/Added at/, 'Text renderer uses sigils, not prose labels');
+	};
+
+	subtest 'output contains no prose "Removed at" label' => sub {
+		my $out = $render_text->([
+			{ op => 'remove', path => '/x', from => 'v' },
+		]);
+		unlike($out, qr/Removed at/, 'Text renderer uses sigils, not prose labels');
+	};
+
+	# ------------------------------------------------------------------
+	# Multiple changes: ordering and separation
+	# ------------------------------------------------------------------
+
+	subtest 'multiple ops: all appear in output' => sub {
+		my $out = $render_text->([
+			{ op => 'change', path => '/a', from => 1,     to    => 2   },
+			{ op => 'add',    path => '/b', value => 'new'              },
+			{ op => 'remove', path => '/c', from  => 'old'              },
+		]);
+		like($out, qr/^~ \/a$/m, 'change block present');
+		like($out, qr/^\+ \/b$/m, 'add block present');
+		like($out, qr/^- \/c$/m,  'remove block present');
+	};
+
+	subtest 'multiple ops: input order preserved in output' => sub {
+		my $out = $render_text->([
+			{ op => 'add',    path => '/first',  value => 1 },
+			{ op => 'remove', path => '/second', from  => 2 },
+		]);
+		my $pos_add    = index($out, '+ /first');
+		my $pos_remove = index($out, '- /second');
+		ok($pos_add < $pos_remove, 'add block precedes remove block');
+	};
+
+	subtest 'multiple ops: blank separator between blocks' => sub {
+		my $out = $render_text->([
+			{ op => 'add',    path => '/x', value => 1 },
+			{ op => 'remove', path => '/y', from  => 2 },
+		]);
+		# Two blocks with trailing '' each => at least two \n\n sequences
+		my @blanks = ($out =~ /\n\n/g);
+		ok(scalar @blanks >= 2, 'at least two blank separators for two blocks');
+	};
+
+};
+
+# ===========================================================================
 # SECTION 6: Engine::diff() - entry point
 # ===========================================================================
 
