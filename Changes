@@ -2,6 +2,7 @@ Revision history for Data-Hash-Diff-Smart
 
 0.02
 	Added benchmarks
+	Added array_key (GitHub#1)
 
 0.01	Tue Mar 17 08:00:49 EDT 2026
         First draft

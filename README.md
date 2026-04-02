@@ -63,6 +63,14 @@ Returns an arrayref of change operations:
     - lcs - minimal diff using Longest Common Subsequence
     - unordered - treat arrays as multisets (order ignored)
 
+- array\_key => 'id'
+
+    When using `array_mode =` 'unordered'> with arrays of hashes, nominate
+    a field to use as the identity key for matching elements across the two
+    arrays. Without this, elements are compared as multisets by structure.
+
+        diff($old, $new, array_mode => 'unordered', array_key => 'id')
+
 ## diff\_text($old, $new, %opts)
 
 Render the diff as a human-readable text format.
