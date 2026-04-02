@@ -272,7 +272,189 @@ subtest 'diff_test2()' => sub {
 };
 
 # ===========================================================================
-# SECTION 6: Engine::diff() — entry point
+# SECTION 5b: Renderer::Test2 - white-box unit tests
+#
+# We call the renderer directly with hand-crafted change lists so each
+# branch of render() is exercised in isolation, independent of the diff
+# engine.
+# ===========================================================================
+
+BEGIN { require Data::Hash::Diff::Smart::Renderer::Test2 }
+
+my $render = \&Data::Hash::Diff::Smart::Renderer::Test2::render;
+
+subtest 'Renderer::Test2::render()' => sub {
+
+	# ------------------------------------------------------------------
+	# Empty input
+	# ------------------------------------------------------------------
+
+	subtest 'empty changes list: returns empty string' => sub {
+		my $out = $render->([]);
+		is($out, '', 'empty arrayref -> empty string');
+	};
+
+	# ------------------------------------------------------------------
+	# Every output line must start with "# "
+	# ------------------------------------------------------------------
+
+	subtest 'every non-empty line is prefixed with "# "' => sub {
+		my $out = $render->([
+			{ op => 'change', path => '/x', from => 1, to => 2 },
+		]);
+		my @lines = split /\n/, $out;
+		my @bad = grep { length($_) && $_ !~ /^# / } @lines;
+		is(scalar @bad, 0, 'all non-empty lines start with "# "')
+			or diag "Offending lines: @bad";
+	};
+
+	subtest 'output ends with a newline' => sub {
+		my $out = $render->([
+			{ op => 'add', path => '/y', value => 'v' },
+		]);
+		like($out, qr/\n$/, 'output ends with newline');
+	};
+
+	# ------------------------------------------------------------------
+	# op => 'change'
+	# ------------------------------------------------------------------
+
+	subtest 'change op: header line' => sub {
+		my $out = $render->([
+			{ op => 'change', path => '/user/name', from => 'Alice', to => 'Bob' },
+		]);
+		like($out, qr/^# Difference at \/user\/name$/m,
+			'"Difference at <path>" line present');
+	};
+
+	subtest 'change op: from line with "  - " marker' => sub {
+		my $out = $render->([
+			{ op => 'change', path => '/x', from => 'old', to => 'new' },
+		]);
+		like($out, qr/^#   - old$/m, 'from line shows "  - old"');
+	};
+
+	subtest 'change op: to line with "  + " marker' => sub {
+		my $out = $render->([
+			{ op => 'change', path => '/x', from => 'old', to => 'new' },
+		]);
+		like($out, qr/^#   \+ new$/m, 'to line shows "  + new"');
+	};
+
+	subtest 'change op: blank separator line present' => sub {
+		my $out = $render->([
+			{ op => 'change', path => '/x', from => 1, to => 2 },
+		]);
+		like($out, qr/^# $/m, 'blank "# " separator line present after change block');
+	};
+
+	# ------------------------------------------------------------------
+	# op => 'add'
+	# ------------------------------------------------------------------
+
+	subtest 'add op: header line' => sub {
+		my $out = $render->([
+			{ op => 'add', path => '/tags/2', value => 'admin' },
+		]);
+		like($out, qr/^# Added at \/tags\/2$/m, '"Added at <path>" line present');
+	};
+
+	subtest 'add op: value line with "  + " marker' => sub {
+		my $out = $render->([
+			{ op => 'add', path => '/tags/2', value => 'admin' },
+		]);
+		like($out, qr/^#   \+ admin$/m, 'value line shows "  + admin"');
+	};
+
+	subtest 'add op: blank separator line present' => sub {
+		my $out = $render->([
+			{ op => 'add', path => '/x', value => 'v' },
+		]);
+		like($out, qr/^# $/m, 'blank separator line present after add block');
+	};
+
+	# ------------------------------------------------------------------
+	# op => 'remove'
+	# ------------------------------------------------------------------
+
+	subtest 'remove op: header line' => sub {
+		my $out = $render->([
+			{ op => 'remove', path => '/debug', from => 1 },
+		]);
+		like($out, qr/^# Removed at \/debug$/m, '"Removed at <path>" line present');
+	};
+
+	subtest 'remove op: from line with "  - " marker' => sub {
+		my $out = $render->([
+			{ op => 'remove', path => '/debug', from => 1 },
+		]);
+		like($out, qr/^#   - 1$/m, 'from line shows "  - 1"');
+	};
+
+	subtest 'remove op: blank separator line present' => sub {
+		my $out = $render->([
+			{ op => 'remove', path => '/x', from => 'gone' },
+		]);
+		like($out, qr/^# $/m, 'blank separator line present after remove block');
+	};
+
+	# ------------------------------------------------------------------
+	# op => unknown
+	# ------------------------------------------------------------------
+
+	subtest 'unknown op: fallback line emitted' => sub {
+		my $out = $render->([
+			{ op => 'frobnicate', path => '/x' },
+		]);
+		like($out, qr/Unknown op 'frobnicate' at \/x/,
+			'unknown op produces fallback message');
+	};
+
+	subtest 'unknown op: line is still prefixed with "# "' => sub {
+		my $out = $render->([
+			{ op => 'bogus', path => '/y' },
+		]);
+		like($out, qr/^# Unknown op/m, 'unknown op line is "# "-prefixed');
+	};
+
+	# ------------------------------------------------------------------
+	# Multiple changes: ordering and separation
+	# ------------------------------------------------------------------
+
+	subtest 'multiple ops: all appear in output' => sub {
+		my $out = $render->([
+			{ op => 'change', path => '/a', from => 1,     to    => 2   },
+			{ op => 'add',    path => '/b', value => 'new'              },
+			{ op => 'remove', path => '/c', from  => 'old'              },
+		]);
+		like($out, qr/Difference at \/a/, 'change block present');
+		like($out, qr/Added at \/b/,      'add block present');
+		like($out, qr/Removed at \/c/,    'remove block present');
+	};
+
+	subtest 'multiple ops: change appears before add in output' => sub {
+		my $out = $render->([
+			{ op => 'change', path => '/a', from => 1, to => 2 },
+			{ op => 'add',    path => '/b', value => 'x'       },
+		]);
+		my $pos_change = index($out, 'Difference at');
+		my $pos_add    = index($out, 'Added at');
+		ok($pos_change < $pos_add, 'change block precedes add block');
+	};
+
+	subtest 'multiple ops: each block separated by blank "# " line' => sub {
+		my $out = $render->([
+			{ op => 'add',    path => '/x', value => 1 },
+			{ op => 'remove', path => '/y', from  => 2 },
+		]);
+		my @blanks = ($out =~ /^# $/mg);
+		ok(scalar @blanks >= 2, 'at least two blank separator lines for two blocks');
+	};
+
+};
+
+# ===========================================================================
+# SECTION 6: Engine::diff() - entry point
 # ===========================================================================
 
 subtest 'Engine::diff() - entry point' => sub {

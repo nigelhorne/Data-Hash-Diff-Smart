@@ -6,10 +6,10 @@ use warnings;
 use YAML::XS ();
 
 sub render {
-    my ($changes) = @_;
+	my $changes = $_[0];
 
-    # YAML::XS::Dump returns a trailing newline — that’s fine
-    return YAML::XS::Dump($changes);
+	# YAML::XS::Dump returns a trailing newline — that’s fine
+	return YAML::XS::Dump($changes);
 }
 
 1;
