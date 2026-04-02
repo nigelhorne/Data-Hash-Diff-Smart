@@ -65,9 +65,9 @@ Returns an arrayref of change operations:
 
 - array\_key => 'id'
 
-    When using `array_mode =` 'unordered'> with arrays of hashes, nominate
-    a field to use as the identity key for matching elements across the two
-    arrays. Without this, elements are compared as multisets by structure.
+    When using unordered `array_mode` with arrays of hashes,
+    nominate a field to use as the identity key for matching elements across the two arrays.
+    Without this, elements are compared as multisets by structure.
 
         diff($old, $new, array_mode => 'unordered', array_key => 'id')
 
