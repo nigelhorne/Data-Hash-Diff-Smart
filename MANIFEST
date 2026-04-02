@@ -23,6 +23,7 @@ t/00-load.t
 t/array-lcs.t
 t/array-unordered.t
 t/basic.t
+t/critic.t
 t/cycle-detection.t
 t/eof.t
 t/eol.t
