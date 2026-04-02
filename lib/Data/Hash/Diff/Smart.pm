@@ -189,7 +189,7 @@ Nigel Horne, C<< <njh at nigelhorne.com> >>
 
 =head1 SEE ALSO
 
-L<Data::Hash::Diff::Smart>
+L<Data::Hash::Patch::Smart>
 
 =head1 REPOSITORY
 

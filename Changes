@@ -5,6 +5,8 @@ Revision history for Data-Hash-Diff-Smart
 	Added array_key (GitHub#1)
 	Added function.t - white-box tests for all functions, including helper functions, in Smart.pm and Engine.pm
 	Added unit.t - black-box subtests to test each public function, according to their API documentation
+	Added integration.t - a set of subtests to black‑box, end‑to‑end behaviour across multiple routines,
+		including the entire package, according to their API documentation
 	Use 'require' rather than 'use' to load renderers
 
 0.01	Tue Mar 17 08:00:49 EDT 2026

@@ -31,6 +31,7 @@ t/eol.t
 t/function.t
 t/github_1.t
 t/ignore-wildcards.t
+t/integration.t
 t/json-renderer.t
 t/kwalitee.t
 t/test2-renderer.t

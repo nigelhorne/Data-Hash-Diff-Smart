@@ -118,7 +118,7 @@ Nigel Horne, `<njh at nigelhorne.com>`
 
 # SEE ALSO
 
-[Data::Hash::Diff::Smart](https://metacpan.org/pod/Data%3A%3AHash%3A%3ADiff%3A%3ASmart)
+[Data::Hash::Patch::Smart](https://metacpan.org/pod/Data%3A%3AHash%3A%3APatch%3A%3ASmart)
 
 # REPOSITORY
 
