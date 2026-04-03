@@ -419,8 +419,8 @@ sub _diff_array_unordered {
 
 	if ($key_field) {
 		# Key-based matching: pair elements by a nominated field value
-		my %old_by_key = map { $_->{$key_field} => $_ } @$old;
-		my %new_by_key = map { $_->{$key_field} => $_ } @$new;
+		my %old_by_key = map { $_->{$key_field} => $_ } grep { defined $_->{$key_field} } @$old;
+		my %new_by_key = map { $_->{$key_field} => $_ } grep { defined $_->{$key_field} } @$new;
 
 		my %all_keys;
 		$all_keys{$_}++ for keys %old_by_key;
@@ -429,57 +429,54 @@ sub _diff_array_unordered {
 		for my $k (sort keys %all_keys) {
 			my $subpath = Data::Hash::Diff::Smart::Path::join($path, $k);
 
-            if (exists $old_by_key{$k} && exists $new_by_key{$k}) {
-                # Both sides have this key: recurse and diff structurally
-                _diff($old_by_key{$k}, $new_by_key{$k}, $subpath, $changes, $ctx);
-            }
-            elsif (exists $old_by_key{$k}) {
-                push @$changes, {
-                    op   => 'remove',
-                    path => $subpath,
-                    from => $old_by_key{$k},
-                };
-            }
-            else {
-                push @$changes, {
-                    op    => 'add',
-                    path  => $subpath,
-                    value => $new_by_key{$k},
-                };
-            }
-        }
-    } else {
-        # Fallback multiset mode: use Data::Dumper for structural key
-        require Data::Dumper;
-        local $Data::Dumper::Sortkeys = 1;
-        local $Data::Dumper::Indent   = 0;
-        local $Data::Dumper::Terse    = 1;
+			if (exists $old_by_key{$k} && exists $new_by_key{$k}) {
+				# Both sides have this key: recurse and diff structurally
+				_diff($old_by_key{$k}, $new_by_key{$k}, $subpath, $changes, $ctx);
+			} elsif (exists $old_by_key{$k}) {
+				push @$changes, {
+						op   => 'remove',
+						path => $subpath,
+						from => $old_by_key{$k},
+				};
+			} else {
+				push @$changes, {
+					op    => 'add',
+					path  => $subpath,
+					value => $new_by_key{$k},
+				};
+			}
+		}
+	} else {
+		# Fallback multiset mode: use Data::Dumper for structural key
+		require Data::Dumper;
+		local $Data::Dumper::Sortkeys = 1;
+		local $Data::Dumper::Indent   = 0;
+		local $Data::Dumper::Terse    = 1;
 
-        my $struct_key = sub {
-            ref($_[0]) ? Data::Dumper::Dumper($_[0]) : $_[0]
-        };
+		my $struct_key = sub {
+			ref($_[0]) ? Data::Dumper::Dumper($_[0]) : $_[0]
+		};
 
-        my %count_old;
-        my %count_new;
-        $count_old{$struct_key->($_)}++ for @$old;
-        $count_new{$struct_key->($_)}++ for @$new;
+		my %count_old;
+		my %count_new;
+		$count_old{$struct_key->($_)}++ for @$old;
+		$count_new{$struct_key->($_)}++ for @$new;
 
-        my %keys;
-        $keys{$_}++ for keys %count_old;
-        $keys{$_}++ for keys %count_new;
+		my %keys;
+		$keys{$_}++ for keys %count_old;
+		$keys{$_}++ for keys %count_new;
 
-        for my $k (sort keys %keys) {
-            my $o = $count_old{$k} || 0;
-            my $n = $count_new{$k} || 0;
+		for my $k (sort keys %keys) {
+			my $o = $count_old{$k} || 0;
+			my $n = $count_new{$k} || 0;
 
-            if ($n > $o) {
-                push @$changes, { op => 'add',    path => "$path/*", value => $k } for 1 .. $n - $o;
-            }
-            elsif ($o > $n) {
-                push @$changes, { op => 'remove',  path => "$path/*", from  => $k } for 1 .. $o - $n;
-            }
-        }
-    }
+			if ($n > $o) {
+				push @$changes, { op => 'add',    path => "$path/*", value => $k } for 1 .. $n - $o;
+			} elsif ($o > $n) {
+				push @$changes, { op => 'remove',  path => "$path/*", from  => $k } for 1 .. $o - $n;
+			}
+		}
+	}
 }
 
 sub _key {
