@@ -22,8 +22,8 @@ our $VERSION = '0.01';
 
 =head1 DESCRIPTION
 
-This module implements the recursive diff algorithm used by
-L<Data::Hash::Diff::Smart>. It is not intended to be used directly.
+This module implements the recursive diff algorithm used by L<Data::Hash::Diff::Smart>.
+It is not intended to be used directly.
 
 Features include:
 
@@ -226,20 +226,18 @@ sub _diff_hash {
 
 		if (exists $old->{$k} && exists $new->{$k}) {
 			_diff($old->{$k}, $new->{$k}, $subpath, $changes, $ctx);
-		}
-		elsif (exists $old->{$k}) {
+		} elsif (exists $old->{$k}) {
 			push @$changes, {
 				op   => 'remove',
 				path => $subpath,
 				from => $old->{$k},
-			};
-		}
-		else {
+			} unless _is_ignored($subpath, $ctx->{ignore});
+		} else {
 			push @$changes, {
-				op	=> 'add',
+				op    => 'add',
 				path  => $subpath,
 				value => $new->{$k},
-			};
+			} unless _is_ignored($subpath, $ctx->{ignore});
 		}
 	}
 }
@@ -278,20 +276,12 @@ sub _diff_array_index {
 
 		if ($i <= $#$old && $i <= $#$new) {
 			_diff($old->[$i], $new->[$i], $subpath, $changes, $ctx);
-		}
-		elsif ($i <= $#$old) {
-			push @$changes, {
-				op   => 'remove',
-				path => $subpath,
-				from => $old->[$i],
-			};
-		}
-		else {
-			push @$changes, {
-				op	=> 'add',
-				path  => $subpath,
-				value => $new->[$i],
-			};
+		} elsif ($i <= $#$old) {
+			push @$changes, { op => 'remove', path => $subpath, from => $old->[$i] }
+				unless _is_ignored($subpath, $ctx->{ignore});
+		} else {
+			push @$changes, { op => 'add', path => $subpath, value => $new->[$i] }
+				unless _is_ignored($subpath, $ctx->{ignore});
 		}
 	}
 }
@@ -390,20 +380,14 @@ sub _diff_array_lcs {
 	}
 	while ($ai < @a) {
 		my $subpath = Data::Hash::Diff::Smart::Path::join($path, $ai);
-		push @$changes, {
-			op => 'remove',
-			path => $subpath,
-			from => $a[$ai],
-		};
+		push @$changes, { op => 'remove', path => $subpath, from => $a[$ai] }
+			unless _is_ignored($subpath, $ctx->{ignore});
 		$ai++;
 	}
 	while ($bi < @b) {
 		my $subpath = Data::Hash::Diff::Smart::Path::join($path, $bi);
-		push @$changes, {
-			op => 'add',
-			path => $subpath,
-			value => $b[$bi],
-		};
+		push @$changes, { op => 'add', path => $subpath, value => $b[$bi] }
+			unless _is_ignored($subpath, $ctx->{ignore});
 		$bi++;
 	}
 }
@@ -419,8 +403,8 @@ sub _diff_array_unordered {
 
 	if ($key_field) {
 		# Key-based matching: pair elements by a nominated field value
-		my %old_by_key = map { $_->{$key_field} => $_ } grep { defined $_->{$key_field} } @$old;
-		my %new_by_key = map { $_->{$key_field} => $_ } grep { defined $_->{$key_field} } @$new;
+		my %old_by_key = map { $_->{$key_field} => $_ } grep { ref($_) eq 'HASH' && defined $_->{$key_field} } @$old;
+		my %new_by_key = map { $_->{$key_field} => $_ } grep { ref($_) eq 'HASH' && defined $_->{$key_field} } @$new;
 
 		my %all_keys;
 		$all_keys{$_}++ for keys %old_by_key;

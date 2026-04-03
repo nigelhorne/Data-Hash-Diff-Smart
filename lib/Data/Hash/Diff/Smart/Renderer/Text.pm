@@ -17,18 +17,18 @@ sub render {
 		if ($op eq 'change') {
 			push @out,
 				"~ $path",
-				"- $c->{from}",
-				"+ $c->{to}",
+				'- ' . ($c->{from}  // ''),
+				'+ ' . ($c->{to}    // ''),
 				'';
 		} elsif ($op eq 'add') {
 			push @out,
 				"+ $path",
-				"+ $c->{value}",
+				'+ ' . ($c->{value} // ''),
 				'';
 		} elsif ($op eq 'remove') {
 			push @out,
 				"- $path",
-				"- $c->{from}",
+				'- ' . ($c->{from}  // ''),
 				'';
 		} else {
 			push @out, "# unknown op: $op";
