@@ -6,22 +6,16 @@ use warnings;
 use Test::Most;
 use Scalar::Util qw(blessed reftype);
 
-=head1 NAME
+# Destructive, pathological and boundary-condition tests
+# for Data::Hash::Diff::Smart
 
-edge_cases.t - Destructive, pathological and boundary-condition tests
-               for Data::Hash::Diff::Smart
+# These tests probe the limits of the public API: empty structures, undef
+# values, extremely deep nesting, very long strings, Unicode, mixed types,
+# blessed objects, coderefs, IO handles, duplicate keys (impossible in Perl
+# but simulated via tied hashes), NaN/Inf, overloaded objects, zero/false
+# values, and adversarial option inputs.
 
-=head1 DESCRIPTION
-
-These tests probe the limits of the public API: empty structures, undef
-values, extremely deep nesting, very long strings, Unicode, mixed types,
-blessed objects, coderefs, IO handles, duplicate keys (impossible in Perl
-but simulated via tied hashes), NaN/Inf, overloaded objects, zero/false
-values, and adversarial option inputs.
-
-Every test calls only the public interface.
-
-=cut
+# Every test calls only the public interface.
 
 BEGIN {
 	use_ok('Data::Hash::Diff::Smart', qw(
